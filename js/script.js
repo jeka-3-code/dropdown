@@ -1,11 +1,23 @@
-const getTemplate = (data) => {
-  const selectItems = data.map(item => {
-    return `
+class Select {
+  constructor(selector, options) {
+    this.element = document.querySelector(selector);
+    this.options = options;
+    this.selectedId = 0;
+
+    this.render()
+    this.setup()
+    this.search()
+    this.dropdownOpen()
+  }
+
+  getTemplate (data) {
+    const selectItems = data.map(item => {
+      return `
       <li class="select__item" data-type="item" data-id="${item.id}">${item.label}</li>
     `
-  })
+    })
 
-  return `
+    return `
     <div class="select__wrap" data-type="backdrop"></div>
     <div class="select__input" data-type="input">
       <span data-type="text">Выберите элемент из списка</span>
@@ -20,27 +32,15 @@ const getTemplate = (data) => {
       </ul>
     </div>  
   `
-}
-
-class Select {
-  constructor(selector, options) {
-    this.element = document.querySelector(selector);
-    this.options = options;
-    this.selectedId = 0;
-
-    this.#render()
-    this.#setup()
-    this.#search()
-    this.#dropdownOpen()
   }
 
-  #render() {
+  render() {
     const {data} = this.options
     this.element.classList.add('select')
-    this.element.innerHTML = getTemplate(data);
+    this.element.innerHTML = this.getTemplate(data);
   }
 
-  #setup() {
+  setup() {
     this.clickHendler = this.clickHendler.bind(this);
     this.element.addEventListener('click', this.clickHendler)
     this.arrow = this.element.querySelector('[data-type="arrow"]')
@@ -61,7 +61,7 @@ class Select {
     }
   }  
 
-  #search() {
+  search() {
     this.searchInput = this.element.querySelector('[data-type="search"]')    
     const list = this.item;
 
@@ -81,7 +81,7 @@ class Select {
     }
   }  
 
-  #dropdownOpen() {
+  dropdownOpen() {
     let sizeWindow = window.screen.height;
     let topPosition = this.element.offsetTop;
     let bottomPosition = sizeWindow - topPosition - 46;
