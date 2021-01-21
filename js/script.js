@@ -1,23 +1,11 @@
-class Select {
-  constructor(selector, options) {
-    this.element = document.querySelector(selector);
-    this.options = options;
-    this.selectedId = 0;
-
-    this.render()
-    this.setup()
-    this.search()
-    this.dropdownOpen()
-  }
-
-  getTemplate (data) {
-    const selectItems = data.map(item => {
-      return `
+const getTemplate = (data) => {
+  const selectItems = data.map(item => {
+    return `
       <li class="select__item" data-type="item" data-id="${item.id}">${item.label}</li>
     `
-    })
+  })
 
-    return `
+  return `
     <div class="select__wrap" data-type="backdrop"></div>
     <div class="select__input" data-type="input">
       <span data-type="text">Выберите элемент из списка</span>
@@ -32,38 +20,54 @@ class Select {
       </ul>
     </div>  
   `
+}
+
+class Select {
+  constructor(selector, options) {
+    this.elements = document.querySelectorAll(selector);
+    this.options = options;
+    this.selectedId = 0;
+
+    this.#render()
+    this.#setup()
+    this.#dropdownOpen()
   }
 
-  render() {
-    const {data} = this.options
-    this.element.classList.add('select')
-    this.element.innerHTML = this.getTemplate(data);
+  #render() {
+    const { data } = this.options;
+    this.elements.forEach(element => {
+      element.classList.add('select');
+      element.innerHTML = getTemplate(data);
+    })
   }
 
-  setup() {
-    this.clickHendler = this.clickHendler.bind(this);
-    this.element.addEventListener('click', this.clickHendler)
-    this.arrow = this.element.querySelector('[data-type="arrow"]')
-    this.text = this.element.querySelector('[data-type="text"]')
-    this.item = this.element.querySelectorAll('[data-type="item"]')
-    this.dropdown = this.element.querySelector('[data-type="dropdown"]')
-    const closeDropdown = () => {
-      this.close()
-    }
-    let time;
-    window.addEventListener('scroll', closeDropdown);
-    window.onresize = () => {
-      if (time)
-        clearTimeout(time);
+  #setup() {
+    this.elements.forEach(element => {
+      this.clickHendler = this.clickHendler.bind(this);
+      this.item = element.querySelectorAll('[data-type="item"]');
+      this.dropdown = element.querySelector('[data-type="dropdown"]');
+      element.addEventListener('click', (event) => {
+        this.clickHendler(event, element)
+      });
+      const closeDropdown = () => {
+        this.close()
+      }
+      let time;
+      window.addEventListener('scroll', closeDropdown);
+      window.onresize = () => {
+        if (time)
+          clearTimeout(time);
         time = setTimeout(() => {
           closeDropdown();
         }, 100);
-    }
-  }  
+      }
+    })
+  }
 
-  search() {
-    this.searchInput = this.element.querySelector('[data-type="search"]')    
-    const list = this.item;
+  #search(dropdown) {
+    this.searchInput = dropdown.querySelector('[data-type="search"]')
+    this.list = dropdown.querySelectorAll('[data-type="item"]');
+    const list = this.list;
 
     this.searchInput.oninput = function () {
       const value = this.value.trim();
@@ -79,67 +83,76 @@ class Select {
         })
       }
     }
-  }  
-
-  dropdownOpen() {
-    let sizeWindow = window.screen.height;
-    let topPosition = this.element.offsetTop;
-    let bottomPosition = sizeWindow - topPosition - 46;
-
-    if (topPosition === 0) {
-      this.dropdown.classList.add('select__dropdown_bottom');
-    } 
-
-    if (bottomPosition < 440) {
-      this.dropdown.classList.add('select__dropdown_top');
-    } 
-
   }
 
-  clickHendler(event) {
-    const {type} = event.target.dataset;
-    
+  #dropdownOpen() {
+    this.elements.forEach(element => {
+      let sizeWindow = window.screen.height;
+      let topPosition = element.offsetTop;
+      let bottomPosition = sizeWindow - topPosition - 46;
+
+      if (topPosition === 0) {
+        this.dropdown.classList.add('select__dropdown_bottom');
+      }
+      if (bottomPosition < 440) {
+        this.dropdown.classList.add('select__dropdown_top');
+      }
+    })
+  }
+
+  clickHendler(event, element) {
+    const { type } = event.target.dataset;
+
     if (type === "input") {
-      this.toggle();
+      this.toggle(element);
     } else if (type === "item") {
       const id = event.target.dataset.id
-      this.select(id);
+      this.select(id, element);
     } else if (type === "backdrop") {
       this.close()
     }
   }
 
   get isOpen() {
-    return this.element.classList.contains('open');
+    this.elements.forEach(element => {
+      return element.classList.contains('open');
+    })
   }
 
   get current() {
     return this.options.data.find(item => item.id == this.selectedId)
   }
 
-  select(id) {
+  select(id, element) {
     this.selectedId = id
+    this.text = element.querySelector('[data-type="text"]');
     this.text.textContent = this.current.label
     this.close()
   }
 
-  toggle() {
-    this.isOpen ? this.close() : this.open();
+  toggle(element) {
+    this.isOpen ? this.close(element) : this.open(element);
   }
 
-  open() {
-    this.element.classList.add('open');
+  open(element) {
+    this.#search(element);
+    element.classList.add('open');
+    this.arrow = element.querySelector('[data-type="arrow"]');
     this.arrow.classList.remove('fa-chevron-down')
     this.arrow.classList.add('fa-chevron-up')
   }
 
   close() {
-    this.element.classList.remove('open');
-    this.arrow.classList.add('fa-chevron-down')
-    this.arrow.classList.remove('fa-chevron-up')
-    this.searchInput.value = ""
-    this.item.forEach(item => {
-      item.classList.remove('hide');
+    this.elements.forEach(element => {
+      element.classList.remove('open');
+      this.arrow = element.querySelector('[data-type="arrow"]');
+      this.searchInput = element.querySelector('[data-type="search"]')
+      this.arrow.classList.add('fa-chevron-down')
+      this.arrow.classList.remove('fa-chevron-up')
+      this.searchInput.value = ""
+      this.item.forEach(item => {
+        item.classList.remove('hide');
+      })
     })
   }
 }
